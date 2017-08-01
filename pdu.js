@@ -23,16 +23,8 @@ pduParser.parse = function(pdu) {
 
     var senderType = parseInt(buffer[2]).toString(16)
 
-    var encodedSender = pdu.slice(cursor, cursor + senderSize);
-    var senderNum;
-    if (senderType === '91') {
-        senderNum = pduParser.deSwapNibbles(encodedSender);
-    } else if (senderType === 'd0') {
-        senderNum = this.decode7Bit(encodedSender).replace(/\0/g, '');
-    } else {
-        console.error('unsupported sender type.');
-    }
 
+    var senderNum = pduParser.deSwapNibbles(pdu.slice(cursor, cursor+senderSize));
     cursor += senderSize;
 
     var protocolIdentifier = pdu.slice(cursor, cursor+2);
@@ -191,8 +183,10 @@ pduParser.decode7Bit = function(code, count) {
     }
 
     var ascii = '';
-    for(i in bin)
+    for(i in bin){
+        if (parseInt(bin[i], 2) == 0) break; // terminate ascii string on null chanracter!
         ascii += String.fromCharCode(parseInt(bin[i], 2));
+    }
 
     return ascii;
 }
@@ -298,7 +292,10 @@ pduParser.generate = function(message) {
 
         } else if(message.encoding === '7bit') {
             user_data = pduParser.encode7Bit(text);
-            var size = user_data.length / 2;
+            // var size = user_data.length / 2;
+            var size = text.length; // the actual len
+            // console.log("sms.text %d: %s", text.length, text);
+            // console.log("sms.user_data %d: %s", user_data.length, user_data);
         }
 
         pdus[i] += ('00'+parseInt(size).toString(16)).slice(-2);
@@ -386,4 +383,3 @@ function randomHexa(size)
 }
 
 module.exports = pduParser;
-
